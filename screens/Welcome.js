@@ -1,36 +1,49 @@
 import React, { Component } from "react";
-import { Image, StyleSheet, ScrollView } from "react-native";
+import { Animated, Image, ScrollView, StyleSheet } from "react-native";
 import { Block, Button, Text, Utils } from "expo-ui-kit";
 
 // constants
-import { background } from "../constants/images"; // henter bilder
+import { images, theme } from "../constants";
+const { background } = images;
 
 // theme
-const { theme, rgba } = Utils;
+const { rgba } = Utils;
 const { SIZES, COLORS } = theme;
 
 const backgrounds = [
   {
     title: "Secured, forever.",
     description:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+      "Curabitur lobortis id lorem id bibendum. Ut id consectetur magna. Quisque volutpat augue enim, pulvinar lobortis.",
     img: background.welcome
   },
   {
-    title: "Secured, forever.",
+    title: "Encrypted, forever.",
     description:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+      "Curabitur lobortis id lorem id bibendum. Ut id consectetur magna. Quisque volutpat augue enim, pulvinar lobortis.",
     img: background.encrypted
   },
   {
-    title: "Secured, forever.",
+    title: "Privacy, forever.",
     description:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+      "Curabitur lobortis id lorem id bibendum. Ut id consectetur magna. Quisque volutpat augue enim, pulvinar lobortis.",
     img: background.privacy
   }
 ];
 
 export default class Welcome extends Component {
+  scrollX = new Animated.Value(0);
+
+  state = {
+    slideIndex: 0
+  };
+
+  componentDidMount() {
+    this.scrollX.addListener(({ value }) => {
+      this.setState({ slideIndex: Math.floor(value / SIZES.width) });
+    });
+  }
+
   renderImages() {
     return (
       <ScrollView
@@ -41,6 +54,9 @@ export default class Welcome extends Component {
         scrollEventThrottle={16}
         snapToAlignment="center"
         showsHorizontalScrollIndicator={false}
+        onScroll={Animated.event([
+          { nativeEvent: { contentOffset: { x: this.scrollX } } }
+        ])}
       >
         {backgrounds.map((item, index) => (
           <Block
@@ -64,56 +80,85 @@ export default class Welcome extends Component {
   }
 
   renderDots() {
+    const dotPosition = Animated.divide(this.scrollX, SIZES.width);
+
     return (
-      <Block flex={false} row center middle margin={[20, 0, 40, 0]}>
-        <Block
-          radius={8}
-          flex={false}
-          margin={[0, 10]}
-          color={rgba(COLORS.gray)}
-          style={{ width: 8, height: 8 }}
-        />
-        <Block
-          radius={8}
-          flex={false}
-          margin={[0, 5]}
-          color={rgba(COLORS.gray, 0.5)}
-          style={{ width: 8, height: 8 }}
-        />
-        <Block
-          radius={8}
-          flex={false}
-          margin={[0, 5]}
-          color={rgba(COLORS.gray, 0.5)}
-          style={{ width: 8, height: 8 }}
-        />
+      <Block
+        flex={false}
+        row
+        center
+        middle
+        margin={[SIZES.padding, 0, SIZES.padding * 2, 0]}
+      >
+        {backgrounds.map((item, index) => {
+          const opacity = dotPosition.interpolate({
+            inputRange: [index - 1, index, index + 1],
+            outputRange: [0.3, 1, 0.3],
+            extrapolate: "clamp"
+          });
+
+          return (
+            <Block
+              gray
+              animated
+              flex={false}
+              key={`dot-${index}`}
+              radius={SIZES.small}
+              margin={[0, SIZES.small / 2]}
+              style={[styles.dot, { opacity }]}
+            />
+          );
+        })}
       </Block>
     );
   }
+
+  renderTexts() {
+    const { slideIndex } = this.state;
+    const background = backgrounds[slideIndex];
+
+    return (
+      <React.Fragment>
+        <Text animated h3 semibold theme={theme}>
+          {background && background.title}
+        </Text>
+        <Text
+          animated
+          theme={theme}
+          center
+          caption
+          gray
+          margin={[SIZES.small, 0]}
+        >
+          {background && background.description}
+        </Text>
+      </React.Fragment>
+    );
+  }
+
   render() {
     const { navigation } = this.props;
+
     return (
       <Block safe>
         <Block center middle>
           {this.renderImages()}
         </Block>
         <Block flex={false} center bottom margin={60}>
-          <Text h3 semibold>
-            Secured, forever.
-          </Text>
-          <Text h3 center caption gray margin={[10, 0]}>
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
-            eiusmod tempor incididunt ut labore et dolore magna aliqua.
-          </Text>
+          {this.renderTexts()}
           {this.renderDots()}
           <Button
             primary
+            theme={theme}
             onPress={() => navigation.navigate("VPN")}
-            style={{
-              borderRadius: 40
-            }}
           >
-            <Text center white caption bold margin={[6, 26]}>
+            <Text
+              center
+              white
+              caption
+              bold
+              margin={[SIZES.padding / 2, SIZES.padding * 2]}
+            >
               GET STARTED
             </Text>
           </Button>
@@ -123,4 +168,6 @@ export default class Welcome extends Component {
   }
 }
 
-const styles = StyleSheet.create({});
+const styles = StyleSheet.create({
+  dot: { width: SIZES.base, height: SIZES.base }
+});
